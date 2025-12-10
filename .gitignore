@@ -4,3 +4,4 @@ data/sp500_historical_returns.csv
 data/tickers_history.csv
 data/sp_historical_constituents.csv
 data/nilearn_data/*
+utils/__pycache__/*
