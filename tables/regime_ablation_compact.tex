@@ -1,0 +1,18 @@
+\begin{table}[h!]
+\centering
+\caption{Best Performing Regime Count by Dataset and Horizon}
+\label{tab:regime-best}
+\begin{tabular}{lccccccc}
+\toprule
+Dataset & \multicolumn{2}{c}{$h=1$} & \multicolumn{2}{c}{$h=5$} & \multicolumn{2}{c}{$h=10$} \\
+\cmidrule(lr){2-3} \cmidrule(lr){4-5} \cmidrule(lr){6-7}
+ & Best $R$ & NRMSE & Best $R$ & NRMSE & Best $R$ & NRMSE \\
+\midrule
+OU & 3 & 0.2230 & 1 & 0.2902 & 1 & 0.3380 \\
+Double Well & 4 & 0.1637 & 1 & 0.3079 & 1 & 0.3618 \\
+Cir & 1 & 0.0078 & 1 & 0.0171 & 1 & 0.0277 \\
+SP500 & 1 & 0.8512 & 1 & 0.8109 & 1 & 1.0974 \\
+ABIDE & 1 & 0.7198 & 1 & 0.7667 & 1 & 0.7440 \\
+\bottomrule
+\end{tabular}
+\end{table}
