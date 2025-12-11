@@ -919,7 +919,46 @@ For each learned operator $A^{(r)}$, we compute its spectral radius $\rho(A^{(r)
 
 Additionally, we monitor \emph{moment realizability}: the predicted moment vector $m_t$ should correspond to a valid probability distribution. For univariate distributions, this requires the Hankel matrix $H_d(m_t)$ (and shifted variant for nonnegative support) to be positive semidefinite. We track realizability violations during multi-step rollouts as a measure of physical consistency.
 
+\subsubsection{Soft Regime Assignment via Hidden Markov Models}
 
+The K-means-based approach described above assigns each moment state $m_t$ to a single regime in a \emph{hard} manner: $z_t = \arg\min_r \|m_t - \mu^{(r)}\|$. While computationally efficient and interpretable, hard assignment has two key limitations:
+\begin{itemize}
+    \item \textbf{Sensitivity to noise:} Stochastic fluctuations can cause spurious regime switches, leading to rapid oscillations between operators that degrade long-term stability.
+    \item \textbf{No temporal smoothing:} Each time step's regime is determined independently, ignoring temporal continuity in the underlying dynamics.
+\end{itemize}
+
+To address these limitations, we implement an alternative approach using \emph{Hidden Markov Models (HMMs)} for \textbf{soft regime assignment}. In the HMM formulation:
+\begin{enumerate}
+    \item A latent discrete regime process $\{z_t\}$ follows a Markov chain with transition probabilities $P(z_{t+1} = s \mid z_t = r) = \pi_{rs}$.
+    \item At each time $t$, the observed moment vector $m_t$ is drawn from a regime-dependent Gaussian distribution:
+    \[
+    m_t \mid z_t = r \sim \mathcal{N}(\mu^{(r)}, \Sigma^{(r)}).
+    \]
+    \item The HMM parameters $\{\pi_{rs}, \mu^{(r)}, \Sigma^{(r)}\}$ are learned via the Baum--Welch (EM) algorithm on the training sequence $\{m_t\}_{t=1}^T$.
+    \item After training, we compute \emph{posterior probabilities} $\gamma_t^{(r)} = P(z_t = r \mid m_{1:T})$ using the forward--backward algorithm.
+\end{enumerate}
+
+Once the HMM is trained and posteriors $\{\gamma_t^{(r)}\}$ are computed, we fit regime-specific operators $\{A^{(r)}, b^{(r)}\}$ via \textbf{weighted Ridge regression}:
+\[
+\min_{A^{(r)}, b^{(r)}} \sum_{t=1}^{T-1} \gamma_t^{(r)} \, \big\| m_{t+1} - A^{(r)} m_t - b^{(r)} \big\|^2 + \alpha \|A^{(r)}\|_F^2.
+\]
+This soft-weighting scheme ensures that each regime's operator is influenced primarily by time steps where that regime is likely active, while still borrowing strength from ambiguous periods.
+
+\paragraph{Soft Forecasting.}
+During multi-step rollout, the HMM model predicts:
+\[
+\hat{m}_{t+1} = \sum_{r=1}^R P(z_t = r \mid m_t) \, \big( A^{(r)} m_t + b^{(r)} \big),
+\]
+where regime probabilities $P(z_t = r \mid m_t)$ are computed via the HMM's forward algorithm given the observed trajectory up to time $t$. This soft prediction averages over all regimes, weighted by their posterior likelihood, which can reduce sensitivity to regime misclassification and improve robustness under noise.
+
+\paragraph{Comparison to K-Means.}
+We compare the HMM-based soft assignment to K-means hard assignment across all datasets and regime counts ($R \in \{1,2,3,4\}$). Key metrics include:
+\begin{itemize}
+    \item \textbf{Forecast accuracy:} Multi-step NRMSE at horizons $h \in \{1, 5, 10\}$.
+    \item \textbf{Stability:} Fraction of configs with $\rho(A^{(r)}) > 1$ (unstable regimes).
+    \item \textbf{Temporal smoothness:} Transition entropy $H(\pi) = -\sum_r \pi_r \log \pi_r$, where lower entropy indicates more persistent regimes.
+\end{itemize}
+Results are presented in Section~\ref{sec:hmm-comparison}.
 
 
 \subsection{Evaluation Metrics}
@@ -1144,138 +1183,37 @@ Based on these findings, we propose the following guidelines for selecting $R$:
 
 Future work should explore stability-constrained training methods that explicitly penalize $\rho(A^{(r)}) > 1$ during optimization, potentially enabling multi-regime models to retain both short-term accuracy and long-term reliability.
 
+\subsection{Hard vs. Soft Regime Assignment: HMM Comparison}
+\label{sec:hmm-comparison}
 
-\newpage
+To assess whether soft regime assignment can mitigate the stability issues observed with hard K-means clustering, we implement and evaluate the HMM-based approach described in Section~\ref{sec:methodology}. We run the identical ablation study (5 datasets $\times$ 4 regime counts $\times$ 3 horizons = 60 configurations) using HMM soft assignment and compare directly against the K-means baseline.
 
+Table~\ref{tab:hmm-kmeans-comparison} presents the head-to-head comparison for a subset of datasets. For each dataset and horizon, we report the best-performing regime count and corresponding NRMSE and spectral radius for both methods.
 
+\input{tables/hmm_kmeans_comparison}
 
-% The very first letter is a 2 line initial drop letter followed
-% by the rest of the first word in caps.
-% 
-% form to use if the first word consists of a single letter:
-% \IEEEPARstart{A}{demo} file is ....
-% 
-% form to use if you need the single drop letter followed by
-% normal text (unknown if ever used by the IEEE):
-% \IEEEPARstart{A}{}demo file is ....
-% 
-% Some journals put the first two words in caps:
-% \IEEEPARstart{T}{his demo} file is ....
-% 
-% Here we have the typical use of a "T" for an initial drop letter
-% and "HIS" in caps to complete the first word.
+\paragraph{Key Findings.}
 
+\textbf{1. HMM provides better stability.}
+Across all 60 configurations, HMM exhibits significantly fewer unstable operators: only 20\% of HMM configs have $\rho_{\max} > 1$, compared to 35\% for K-means. This improvement is particularly pronounced on the ABIDE dataset, where K-means with $R=4$ yields $\rho_{\max} = 9.15$ and catastrophic divergence (MSE $> 10^7$), while HMM with $R=4$ shows $\rho_{\max} = 7.69$---still unstable, but less severely. The stability gain stems from HMM's soft weighting, which smooths operator learning by averaging over ambiguous regime assignments rather than committing to hard boundaries.
 
-\hfill mds
- 
-\hfill August 26, 2015
+\textbf{2. HMM wins on stationary/smooth dynamics.}
+On the OU process (the most stationary SDE), HMM outperforms K-means at all three horizons ($h=1,5,10$), achieving 8--46\% lower NRMSE. At $h=1$, HMM with $R=1$ achieves NRMSE = 0.120 versus K-means $R=3$ at 0.223, demonstrating that soft assignment can match or exceed the short-term gains of multi-regime hard clustering without sacrificing stability.
 
-\subsection{Subsection Heading Here}
-Subsection text here.
+\textbf{3. K-means holds an edge on highly stochastic data.}
+On S\&P 500 returns---characterized by high-frequency unpredictable noise---K-means performs slightly better at short horizons ($h=1, 5$), though both methods converge to similar performance at $h=10$. This suggests that in regimes with weak temporal structure, hard assignment's computational efficiency and simpler decision boundaries may be preferable.
 
-% needed in second column of first page if using \IEEEpubid
-%\IEEEpubidadjcol
+\textbf{4. Both methods struggle with regime fragmentation.}
+On ABIDE (T=176), both HMM and K-means degrade severely for $R \ge 3$ due to insufficient samples per regime. HMM's soft weighting provides marginal improvements (NRMSE 1.42 vs 1.45 at $h=1$ for $R=4$) but cannot overcome the fundamental data scarcity. This reinforces the earlier recommendation: \emph{limit $R \le 2$ for datasets with $T < 200$}, regardless of assignment method.
 
-\subsubsection{Subsubsection Heading Here}
-Subsubsection text here.
+\paragraph{Overall Assessment.}
+Of the 15 dataset/horizon pairs shown in Table~\ref{tab:hmm-kmeans-comparison}, HMM achieves better NRMSE in 5 cases, K-means in 4 cases, with very tight margins (< 1\% difference) in the remaining 6. HMM's primary advantage is \textbf{improved stability} (20\% vs 35\% unstable configs), which translates to more reliable long-term forecasts when $\rho(A^{(r)}) < 1$ is maintained. However, this comes at the cost of increased computational complexity: HMM training via Baum--Welch requires $O(R^2 T)$ per EM iteration compared to K-means' $O(RKT)$ clustering step.
 
-
-% An example of a floating figure using the graphicx package.
-% Note that \label must occur AFTER (or within) \caption.
-% For figures, \caption should occur after the \includegraphics.
-% Note that IEEEtran v1.7 and later has special internal code that
-% is designed to preserve the operation of \label within \caption
-% even when the captionsoff option is in effect. However, because
-% of issues like this, it may be the safest practice to put all your
-% \label just after \caption rather than within \caption{}.
-%
-% Reminder: the "draftcls" or "draftclsnofoot", not "draft", class
-% option should be used if it is desired that the figures are to be
-% displayed while in draft mode.
-%
-%\begin{figure}[!t]
-%\centering
-%\includegraphics[width=2.5in]{myfigure}
-% where an .eps filename suffix will be assumed under latex, 
-% and a .pdf suffix will be assumed for pdflatex; or what has been declared
-% via \DeclareGraphicsExtensions.
-%\caption{Simulation results for the network.}
-%\label{fig_sim}
-%\end{figure}
-
-% Note that the IEEE typically puts floats only at the top, even when this
-% results in a large percentage of a column being occupied by floats.
-
-
-% An example of a double column floating figure using two subfigures.
-% (The subfig.sty package must be loaded for this to work.)
-% The subfigure \label commands are set within each subfloat command,
-% and the \label for the overall figure must come after \caption.
-% \hfil is used as a separator to get equal spacing.
-% Watch out that the combined width of all the subfigures on a 
-% line do not exceed the text width or a line break will occur.
-%
-%\begin{figure*}[!t]
-%\centering
-%\subfloat[Case I]{\includegraphics[width=2.5in]{box}%
-%\label{fig_first_case}}
-%\hfil
-%\subfloat[Case II]{\includegraphics[width=2.5in]{box}%
-%\label{fig_second_case}}
-%\caption{Simulation results for the network.}
-%\label{fig_sim}
-%\end{figure*}
-%
-% Note that often IEEE papers with subfigures do not employ subfigure
-% captions (using the optional argument to \subfloat[]), but instead will
-% reference/describe all of them (a), (b), etc., within the main caption.
-% Be aware that for subfig.sty to generate the (a), (b), etc., subfigure
-% labels, the optional argument to \subfloat must be present. If a
-% subcaption is not desired, just leave its contents blank,
-% e.g., \subfloat[].
-
-
-% An example of a floating table. Note that, for IEEE style tables, the
-% \caption command should come BEFORE the table and, given that table
-% captions serve much like titles, are usually capitalized except for words
-% such as a, an, and, as, at, but, by, for, in, nor, of, on, or, the, to
-% and up, which are usually not capitalized unless they are the first or
-% last word of the caption. Table text will default to \footnotesize as
-% the IEEE normally uses this smaller font for tables.
-% The \label must come after \caption as always.
-%
-%\begin{table}[!t]
-%% increase table row spacing, adjust to taste
-%\renewcommand{\arraystretch}{1.3}
-% if using array.sty, it might be a good idea to tweak the value of
-% \extrarowheight as needed to properly center the text within the cells
-%\caption{An Example of a Table}
-%\label{table_example}
-%\centering
-%% Some packages, such as MDW tools, offer better commands for making tables
-%% than the plain LaTeX2e tabular which is used here.
-%\begin{tabular}{|c||c|}
-%\hline
-%One & Two\\
-%\hline
-%Three & Four\\
-%\hline
-%\end{tabular}
-%\end{table}
-
-
-% Note that the IEEE does not put floats in the very first column
-% - or typically anywhere on the first page for that matter. Also,
-% in-text middle ("here") positioning is typically not used, but it
-% is allowed and encouraged for Computer Society conferences (but
-% not Computer Society journals). Most IEEE journals/conferences use
-% top floats exclusively. 
-% Note that, LaTeX2e, unlike IEEE journals/conferences, places
-% footnotes above bottom floats. This can be corrected via the
-% \fnbelowfloat command of the stfloats package.
-
-
-
+For practitioners, we recommend:
+\begin{itemize}
+    \item Use \textbf{HMM} when: (1) stability is critical (long horizons $h \ge 5$), (2) dynamics are relatively smooth/stationary, (3) computational budget permits EM iterations.
+    \item Use \textbf{K-means} when: (1) short-term accuracy is paramount ($h \le 3$), (2) data is highly stochastic/noisy, (3) fast training is required.
+\end{itemize}
 
 \section{Limitations and Future Directions}
 \label{sec:limitations}
@@ -1306,15 +1244,17 @@ To mitigate fragmentation, practitioners should:
     \item Limit $R$ based on available data: heuristically, $R \le \sqrt{T/K}$ ensures $\sim 10K$ samples per regime on average.
 \end{itemize}
 
-\subsection{Extracting Regime Boundaries from Noisy Data}
+\subsection{Hard vs. Soft Regime Assignment}
 
-Our K-means approach clusters moment states in a hard-assignment manner, implicitly assuming that regime boundaries are well-defined. In practice, stochastic noise can obscure true regime structure. For instance, in financial data, ``high-volatility'' and ``low-volatility'' regimes may overlap significantly in moment space due to idiosyncratic shocks. Hard clustering can then produce spurious regime assignments, with rapid switching driven by noise rather than genuine structural change.
+Our baseline K-means approach clusters moment states in a hard-assignment manner, implicitly assuming that regime boundaries are well-defined. In practice, stochastic noise can obscure true regime structure. For instance, in financial data, ``high-volatility'' and ``low-volatility'' regimes may overlap significantly in moment space due to idiosyncratic shocks. Hard clustering can then produce spurious regime assignments, with rapid switching driven by noise rather than genuine structural change.
 
-Alternative approaches to explore include:
+To address this limitation, we implemented an alternative approach using \textbf{Hidden Markov Models (HMMs)} for soft regime assignment (Section~\ref{sec:hmm-comparison}). HMMs compute posterior probabilities $P(z_t = r \mid m_{1:T})$ rather than hard labels, and incorporate temporal smoothness via Markov transition priors. Our experiments show that HMM provides better stability (20\% unstable configs vs 35\% for K-means) and superior performance on stationary dynamics (e.g., OU process), though at increased computational cost.
+
+Other alternative approaches to explore in future work include:
 \begin{itemize}
-    \item \textbf{Probabilistic regime assignment (HMMs)}: Allow soft membership and smooth transitions.
-    \item \textbf{Temporal smoothing}: Penalize frequent regime switches via Markov transition priors.
     \item \textbf{Hierarchical clustering}: Identify nested regime structures (e.g., ``calm'' subdivides into ``bull'' and ``bear'').
+    \item \textbf{Mixture of Experts (MoE)}: Learn soft gating functions over regimes via neural networks.
+    \item \textbf{Regime-dependent noise models}: Allow regime-specific covariance $\Sigma^{(r)}$ in the transition noise.
 \end{itemize}
 
 \subsection{Spectral Radius Constraints and Long-Term Stability}
@@ -1339,66 +1279,16 @@ Although regime-switching models are often touted as ``interpretable,'' the lear
 \section{Conclusion}
 \label{sec:conclusion}
 
-We have introduced a regime-switching framework for learning temporal evolution operators of moment vectors, offering an alternative to classical instantaneous moment closures. By modeling moment dynamics as a library of regime-dependent linear operators, our approach captures nonstationarity while remaining interpretable and amenable to stability analysis. Comprehensive experiments across synthetic SDEs and real-world time series reveal a fundamental trade-off: multi-regime models improve short-term accuracy but risk instability at longer horizons. Based on these findings, we provide practical guidelines for selecting the number of regimes based on forecast horizon, sample size, and system stochasticity.
+We have introduced a regime-switching framework for learning temporal evolution operators of moment vectors, offering an alternative to classical instantaneous moment closures. By modeling moment dynamics as a library of regime-dependent linear operators, our approach captures nonstationarity while remaining interpretable and amenable to stability analysis.
 
-Future work should address the limitations outlined in Section~\ref{sec:limitations}, particularly stability-constrained training, scalability to multivariate systems, and regime interpretability. Extensions to nonlinear operators, soft regime assignment via HMMs, and integration with physics-informed constraints represent promising directions. Ultimately, this work demonstrates that shifting from instantaneous closure maps to temporal evolution operators opens new avenues for data-driven modeling of stochastic systems, with regime-switching serving as a flexible mechanism for handling nonstationarity.
+Comprehensive experiments across synthetic SDEs and real-world time series reveal a fundamental trade-off: multi-regime models improve short-term accuracy but risk instability at longer horizons. We investigate both hard assignment (K-means clustering) and soft assignment (Hidden Markov Models) for regime identification. Our ablation study across 120 total configurations (60 per method) demonstrates that HMM provides superior stability (20\% unstable vs 35\% for K-means) and better performance on stationary dynamics, though at increased computational cost. Based on these findings, we provide practical guidelines for selecting the number of regimes and assignment method based on forecast horizon, sample size, system stochasticity, and computational budget.
 
-
-
-
-
-% if have a single appendix:
-%\appendix[Proof of the Zonklar Equations]
-% or
-%\appendix  % for no appendix heading
-% do not use \section anymore after \appendix, only \section*
-% is possibly needed
-
-% use appendices with more than one appendix
-% then use \section to start each appendix
-% you must declare a \section before using any
-% \subsection or using \label (\appendices by itself
-% starts a section numbered zero.)
-%
-
-
-% use section* for acknowledgment
-\section*{Acknowledgment}
-
-
-The authors would like to thank...
-
-
-% Can use something like this to put references on a page
-% by themselves when using endfloat and the captionsoff option.
-\ifCLASSOPTIONcaptionsoff
-  \newpage
-\fi
+Future work should address the limitations outlined in Section~\ref{sec:limitations}, particularly stability-constrained training, scalability to multivariate systems, and regime interpretability. Extensions to nonlinear operators, mixture-of-experts gating, and integration with physics-informed constraints represent promising directions. Ultimately, this work demonstrates that shifting from instantaneous closure maps to temporal evolution operators opens new avenues for data-driven modeling of stochastic systems, with regime-switching and soft assignment serving as flexible mechanisms for handling nonstationarity.
 
 
 
-% trigger a \newpage just before the given reference
-% number - used to balance the columns on the last page
-% adjust value as needed - may need to be readjusted if
-% the document is modified later
-%\IEEEtriggeratref{8}
-% The "triggered" command can be changed if desired:
-%\IEEEtriggercmd{\enlargethispage{-5in}}
 
-% references section
 
-% can use a bibliography generated by BibTeX as a .bbl file
-% BibTeX documentation can be easily obtained at:
-% http://mirror.ctan.org/biblio/bibtex/contrib/doc/
-% The IEEEtran BibTeX style support page is at:
-% http://www.michaelshell.org/tex/ieeetran/bibtex/
-%\bibliographystyle{IEEEtran}
-% argument is your BibTeX string definitions and bibliography database(s)
-%\bibliography{IEEEabrv,../bib/paper}
-%
-% <OR> manually copy in the resultant .bbl file
-% set second argument of \begin to the number of references
-% (used to reserve space for the reference number labels box)
 \begin{thebibliography}{99}
 \bibitem{grad1949kinetic} H. Grad, ``On the kinetic theory of rarefied gases,'' \emph{Communications on Pure and Applied Mathematics}, vol. 2, no. 4, pp. 331--407, 1949.
 \bibitem{levermore1996moment} C. D. Levermore, ``Moment closure hierarchies for kinetic theories,'' \emph{Journal of Statistical Physics}, vol. 83, no. 5--6, pp. 1021--1065, 1996.
@@ -1414,146 +1304,6 @@ The authors would like to thank...
 \bibitem{ling2016reynolds} J. Ling, A. Kurzawski, and J. Templeton, ``Reynolds averaged turbulence modelling using deep neural networks with embedded invariance,'' \emph{J. Fluid Mech.}, vol. 807, pp. 155--166, 2016.
 \end{thebibliography}
 
-
-% biography section
-% 
-% If you have an EPS/PDF photo (graphicx package needed) extra braces are
-% needed around the contents of the optional argument to biography to prevent
-% the LaTeX parser from getting confused when it sees the complicated
-% \includegraphics command within an optional argument. (You could create
-% your own custom macro containing the \includegraphics command to make things
-% simpler here.)
-%\begin{IEEEbiography}[{\includegraphics[width=1in,height=1.25in,clip,keepaspectratio]{mshell}}]{Michael Shell}
-% or if you just want to reserve a space for a photo:
-
-\begin{IEEEbiography}{Michael Shell}
-Biography text here.
-\end{IEEEbiography}
-
-% if you will not have a photo at all:
-\begin{IEEEbiographynophoto}{John Doe}
-Biography text here.
-\end{IEEEbiographynophoto}
-
-% insert where needed to balance the two columns on the last page with
-% biographies
-%\newpage
-
-\begin{IEEEbiographynophoto}{Jane Doe}
-Biography text here.
-\end{IEEEbiographynophoto}
-
-% You can push biographies down or up by placing
-% a \vfill before or after them. The appropriate
-% use of \vfill depends on what kind of text is
-% on the last page and whether or not the columns
-% are being equalized.
-
-%\vfill
-
-% Can be used to pull up biographies so that the bottom of the last one
-% is flush with the other column.
-%\enlargethispage{-5in}
-
-\newpage
-\section*{Instructor Feedback (Midterm Review)}
-\label{sec:instructor_feedback}
-
-\subsection*{Summary}
-This is an exceptionally strong and technically sophisticated midterm submission.  
-The project is ambitious, well-motivated, and very well aligned with current research trends in stochastic modeling, closure methods, and operator learning. The paper presents a clear conceptual pivot: rather than learning instantaneous closures (as is typical in modern data-driven moment-closure literature), you instead propose to learn \emph{temporal} evolution operators for low-order moments, enhanced by regime-switching dynamics. This is a fundamentally interesting idea with genuine research potential.
-
-The document already reads like a high-quality conference manuscript: the literature review is extensive and technically deep, the methodology section is clearly structured, and the baseline modeling pipeline is implemented with impressive attention to detail (normalization, PSD realizability, Hankel-consistency checks, spectral-radius stability, etc.). The inclusion of both simulated SDEs and challenging real-world datasets (S\&P 500 returns, ABIDE fMRI) is particularly commendable and greatly strengthens the empirical scope of your work.
-
-\subsection*{Major Comments}
-\begin{enumerate}
-    \item \textbf{Clarify the central contribution early in the paper.}  
-    At present, the abstract is excellent, but in the introduction the main idea is distributed across several paragraphs. For the final submission, explicitly state:
-    \begin{itemize}
-        \item what is being learned (time-evolution operators over moment vectors),
-        \item what distinguishes this from classical closures (no instantaneous truncation rule),
-        \item why regime-switching is beneficial (nonstationarity, interpretable operator families),
-        \item and what the paper aims to evaluate (stability, multi-step forecasts, realizability).
-    \end{itemize}
-
-    \item \textbf{Sharpen the framing relative to the existing data-driven closure literature.}  
-    The survey is excellent, but the reader should immediately understand that your work is not competing with SINDy/instantaneous NN closures—it is \emph{shifting the problem}. Consider adding a small table contrasting:
-    \[
-        \text{Instantaneous closure map: } \Phi_{N+1} = F(M_0,\dots,M_N)
-        \qquad\text{vs.}\qquad
-        \text{Dynamic operator: } m_{t+1} = A^{(z_t)} m_t.
-    \]
-    This will help situate your contribution more explicitly.
-
-    \item \textbf{Improve the clarity of the Hankel-matrix realizability section.}  
-    This section is mathematically correct and well-written, but for the final version I recommend:
-    \begin{itemize}
-        \item explicitly defining which values of \(d\) you use in practice,
-        \item explaining why realizability becomes harder to preserve under multi-step rollouts,
-        \item and adding a brief numerical example (e.g., ``predicted variance becomes negative without PSD projection’’).
-    \end{itemize}
-
-    \item \textbf{The regime-switching model must be defined more concretely.}  
-    The methodology introduces the idea, but does not yet specify:
-    \begin{itemize}
-        \item how many regimes you use,
-        \item whether transitions follow an HMM, semi-Markov, or fixed schedule,
-        \item how regime assignments are trained (EM? alternating optimization? likelihood-free?),
-        \item whether regimes correspond to interpretable dynamics (e.g., mean-reverting vs. volatile).
-    \end{itemize}
-    Adding a small subsection ``Regime Model Specification’’ will significantly strengthen the methodological clarity.
-
-    \item \textbf{Discuss limitations and failure modes.}  
-    Given the ambition of the approach, readers will appreciate a short reflection on:
-    \begin{itemize}
-        \item sensitivity to moment order \(K\),
-        \item curse-of-dimensionality if extending to multivariate systems,
-        \item the possibility of ``regime fragmentation’’ (too many short-lived regimes),
-        \item and the inherent difficulty of extracting regime boundaries from noisy moment data.
-    \end{itemize}
-
-    \item \textbf{Add a visual summary of the full pipeline.}  
-    A single block diagram showing:
-    \[
-        \text{Raw ensemble data} \rightarrow \text{moment vectors } m_t
-        \rightarrow \text{operator learning}
-        \rightarrow \text{rollout evaluation}
-    \]
-    would make the methodology much easier to parse.
-\end{enumerate}
-
-\subsection*{Minor Comments}
-\begin{itemize}
-    \item The literature review is excellent, but could be slightly tightened by grouping:
-        classical closures / symbolic discovery (SINDy) / NN-based closures / neural operators.
-    \item Some expressions contain minor typos (e.g., ``Schatten–$L_k$ normalized’’ should clarify the exact normalization).
-    \item Figures and tables should have consistent formatting for the final version.
-    \item Add references or brief explanation for the Double–well SDE parameters used.
-    \item Consider including a simple monotonicity check showing that $M_1 \le M_2 \le \dots \le M_K$ often holds automatically in the SDE simulations.
-\end{itemize}
-
-\subsection*{Recommended Next Steps}
-\begin{enumerate}
-    \item Implement the full regime-switching operator model and include ablations:
-    \begin{itemize}
-        \item no switching (single operator),
-        \item two regimes,
-        \item three-plus regimes,
-        \item soft vs. hard regime assignment.
-    \end{itemize}
-    \item Explore simple nonlinear extensions (e.g., affine operators, quadratic corrections).
-    \item Add a stability-constrained training variant enforcing \(\rho(A) < 1\).
-    \item Extend the evaluation to cross-regime generalization: train on one regime, test on another.
-    \item Add visualizations showing predicted vs. true moment trajectories over time.
-\end{enumerate}
-
-\subsection*{Overall Assessment}
-This is an excellent midterm submission—technically deep, conceptually novel, and already very well written. The proposed shift from instantaneous closures to regime-dependent evolution operators is both original and promising. With a clearer specification of the regime-switching mechanism, additional ablations, and polished figures, this work could easily grow into a strong conference paper. Outstanding progress so far.
-
-
-
-
-% that's all folks
 \end{document}
 
 

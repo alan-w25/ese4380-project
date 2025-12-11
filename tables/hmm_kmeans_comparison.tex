@@ -1,0 +1,25 @@
+\begin{table}[h!]
+\centering
+\caption{HMM vs K-means: Best Performance by Dataset and Horizon}
+\label{tab:hmm-kmeans-comparison}
+\begin{tabular}{lc|ccc|ccc}
+\toprule
+\textbf{Dataset} & $\mathbf{h}$ & \multicolumn{3}{c|}{\textbf{K-means (Hard)}} & \multicolumn{3}{c}{\textbf{HMM (Soft)}} \\
+ & & $R$ & NRMSE & $\rho_{\max}$ & $R$ & NRMSE & $\rho_{\max}$ \\
+\midrule
+OU & 1 & 3 & 0.2230 & 1.691$^*$ & 1 & \textbf{0.1201} & 0.999 \\
+ & 5 & 1 & 0.2902 & 0.999 & 1 & \textbf{0.2284} & 0.999 \\
+ & 10 & 1 & 0.3380 & 0.999 & 1 & \textbf{0.3091} & 0.999 \\
+\midrule
+SP500 & 1 & 1 & \textbf{0.8512} & 0.335 & 1 & 1.0135 & 0.335 \\
+ & 5 & 1 & \textbf{0.8109} & 0.335 & 2 & 0.8522 & 0.146 \\
+ & 10 & 1 & 1.0974 & 0.335 & 2 & \textbf{0.8206} & 0.146 \\
+\midrule
+ABIDE & 1 & 1 & 0.7198 & 0.714 & 1 & \textbf{0.7077} & 0.714 \\
+ & 5 & 1 & \textbf{0.7667} & 0.714 & 1 & 0.7674 & 0.714 \\
+ & 10 & 1 & \textbf{0.7440} & 0.714 & 1 & 0.7462 & 0.714 \\
+\bottomrule
+\end{tabular}
+\vspace{0.1cm}
+\footnotesize{$^*$ Indicates $\rho_{\max} > 1$ (unstable). Bold indicates better NRMSE.}
+\end{table}
