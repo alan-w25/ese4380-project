@@ -1,0 +1,141 @@
+\relax 
+\citation{grad1949kinetic}
+\citation{levermore1996moment}
+\citation{brunton2016discovering}
+\citation{donaghy2023symbolic}
+\citation{yang2024identification}
+\citation{huang2022mlRTE1}
+\citation{huang2023mlRTE2}
+\citation{ling2016reynolds}
+\@writefile{toc}{\contentsline {section}{\numberline {I}Introduction}{1}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {I-A}}Our Approach: Learning Temporal Evolution Operators}{1}{}\protected@file@percent }
+\newlabel{eq:intro_regime}{{1}{1}{}{}{}}
+\citation{grad1949kinetic}
+\citation{levermore1996moment}
+\citation{levermore1996moment}
+\citation{schnoerr2015comparison}
+\citation{duraisamy2019turbulence}
+\citation{schnoerr2015comparison}
+\citation{karniadakis2021physics}
+\@writefile{lot}{\contentsline {table}{\numberline {I}{\ignorespaces Comparison of Closure Paradigms}}{2}{}\protected@file@percent }
+\newlabel{tab:closure-comparison}{{I}{2}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {I-B}}Contributions and Evaluation}{2}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {II}Literature Review}{2}{}\protected@file@percent }
+\newlabel{sec:litreview}{{II}{2}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {II-A}}Classical Moment Closure Methods}{2}{}\protected@file@percent }
+\citation{karniadakis2021physics}
+\citation{brunton2016discovering}
+\citation{donaghy2023symbolic}
+\citation{yang2024identification}
+\citation{ling2016reynolds}
+\citation{huang2022mlRTE1}
+\citation{huang2023mlRTE2}
+\citation{li2020fourier}
+\citation{li2020fourier}
+\citation{huang2023mlRTE2}
+\citation{karniadakis2021physics}
+\citation{brunton2016discovering}
+\citation{karniadakis2021physics}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {II-B}}Data-Driven Moment Closure Approaches}{3}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {\mbox  {II-B}1}Sparse Regression and Symbolic Discovery}{3}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {\mbox  {II-B}2}Neural Network-Based Closures}{3}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {\mbox  {II-B}3}Neural Operators and Advanced Models}{3}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {II-C}}Mathematical Formulation and Evaluation of Learned Closures}{3}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {II-D}}Linear vs. Nonlinear Learned Closures}{3}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {III}Methodology}{4}{}\protected@file@percent }
+\newlabel{sec:methodology}{{III}{4}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {III-A}}Data and Preprocessing}{4}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {\mbox  {III-A}1}Simulated SDEs}{4}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{\numberline {\mbox  {III-A}1a}Simulation.}{4}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{\numberline {\mbox  {III-A}1b}Moment construction.}{4}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {\mbox  {III-A}2}Real-World Data: Financial and Neuroscience Time Series}{4}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{\numberline {\mbox  {III-A}2a}S\&P 500 equity returns.}{4}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{\numberline {\mbox  {III-A}2b}ABIDE fMRI}{5}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {III-B}}Baseline Model Training}{5}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {\mbox  {III-B}1}Autoregressive and Polynomial Models}{5}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {\mbox  {III-B}2}Moment-Level Regressions}{5}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {\mbox  {III-B}3}Regularization and Shrinkage}{5}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {\mbox  {III-B}4}Constrained Training: Moment Realizability}{5}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{\numberline {\mbox  {III-B}4a}Choice of Hankel Order $d$ in Practice.}{6}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{\numberline {\mbox  {III-B}4b}Why Realizability Becomes Harder Under Multi-Step Rollouts.}{6}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{\numberline {\mbox  {III-B}4c}Enforcing Realizability in Practice.}{6}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {III-C}}Methodological Pipeline Overview}{6}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {III-D}}Proposed Models: Regime-Switching Moment Evolution Operators}{6}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Pipeline for regime-switching moment evolution operators. Raw stochastic data is converted to moment trajectories, normalized, and split into training/test sets. During training, K-means partitions the moment state space into $R$ regimes, and Ridge regression learns regime-specific operators $\{A^{(r)}, b^{(r)}\}$. At evaluation time, learned operators are applied recursively for multi-step forecasting, with metrics computed for accuracy (MSE, NRMSE), stability (spectral radius), and physical consistency (Hankel PSD checks). Model selection iterates over different $R$ values based on test performance.}}{7}{}\protected@file@percent }
+\newlabel{fig:pipeline}{{1}{7}{}{}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {\mbox  {III-D}1}Model Formulation}{7}{}\protected@file@percent }
+\newlabel{eq:regime_dynamics}{{2}{7}{}{}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {\mbox  {III-D}2}Regime Identification via K-Means Clustering}{7}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{\numberline {\mbox  {III-D}2a}Clustering Procedure.}{7}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{\numberline {\mbox  {III-D}2b}Per-Regime Operator Learning.}{7}{}\protected@file@percent }
+\newlabel{eq:ridge_per_regime}{{5}{7}{}{}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {\mbox  {III-D}3}Multi-Step Forecasting and Regime Transitions}{8}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {\mbox  {III-D}4}Model Selection: Choosing the Number of Regimes}{8}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {\mbox  {III-D}5}Stability and Physical Constraints}{8}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {\mbox  {III-D}6}Soft Regime Assignment via Hidden Markov Models}{8}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{\numberline {\mbox  {III-D}6a}Soft Forecasting.}{9}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{\numberline {\mbox  {III-D}6b}Comparison to K-Means.}{9}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {III-E}}Evaluation Metrics}{9}{}\protected@file@percent }
+\newlabel{sec:evaluation}{{\mbox  {III-E}}{9}{}{}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {\mbox  {III-E}1}Predictive Accuracy}{9}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{\numberline {\mbox  {III-E}1a}Multi-step Forecast Error.}{9}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{\numberline {\mbox  {III-E}1b}Trajectory Correlation.}{9}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {\mbox  {III-E}2}Dynamical and Physical Consistency}{9}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{\numberline {\mbox  {III-E}2a}Stability (Spectral Radius).}{9}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{\numberline {\mbox  {III-E}2b}Realizability.}{9}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{\numberline {\mbox  {III-E}2c}Regime Identification.}{9}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {\mbox  {III-E}3}Model Efficiency and Generalization}{9}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{\numberline {\mbox  {III-E}3a}Parsimony and Complexity.}{9}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{\numberline {\mbox  {III-E}3b}Computational Cost.}{10}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{\numberline {\mbox  {III-E}3c}Generalization and Distributional Shift.}{10}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {IV}Baseline Results}{10}{}\protected@file@percent }
+\newlabel{sec:baseline-results}{{IV}{10}{}{}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {V}Regime-Switching Results}{10}{}\protected@file@percent }
+\newlabel{sec:regime-results}{{V}{10}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-A}}Ablation Study: Regime Count Selection}{10}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-B}}The Regime Count vs. Stability Trade-Off}{10}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{\numberline {\mbox  {V-B}0a}Observation 1: Multi-regime models improve short-term fit.}{10}{}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {II}{\ignorespaces Closed-loop multi-horizon forecasting error for VAR and polynomial baseline models.}}{11}{}\protected@file@percent }
+\newlabel{tab:baseline-results-synth}{{II}{11}{}{}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {III}{\ignorespaces Real-World multi-horizon forecasting error for VAR and polynomial baseline models.}}{11}{}\protected@file@percent }
+\newlabel{tab:baseline-results-rw}{{III}{11}{}{}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {IV}{\ignorespaces Best Performing Regime Count by Dataset and Horizon}}{11}{}\protected@file@percent }
+\newlabel{tab:regime-best}{{IV}{11}{}{}{}}
+\@writefile{toc}{\contentsline {paragraph}{\numberline {\mbox  {V-B}0b}Observation 2: Multi-regime models destabilize at longer horizons.}{11}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{\numberline {\mbox  {V-B}0c}Observation 3: Simple models dominate for long-term forecasting.}{11}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-C}}Dataset-Specific Findings}{12}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{\numberline {\mbox  {V-C}0a}Synthetic SDEs (OU, Double-well, CIR).}{12}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{\numberline {\mbox  {V-C}0b}S\&P 500 equity returns.}{12}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{\numberline {\mbox  {V-C}0c}ABIDE fMRI (small-sample regime).}{12}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-D}}Implications for Model Selection}{12}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-E}}Hard vs. Soft Regime Assignment: HMM Comparison}{12}{}\protected@file@percent }
+\newlabel{sec:hmm-comparison}{{\mbox  {V-E}}{12}{}{}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {V}{\ignorespaces HMM vs K-means: Best Performance by Dataset and Horizon}}{12}{}\protected@file@percent }
+\newlabel{tab:hmm-kmeans-comparison}{{V}{12}{}{}{}}
+\@writefile{toc}{\contentsline {paragraph}{\numberline {\mbox  {V-E}0a}Key Findings.}{12}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{\numberline {\mbox  {V-E}0b}Overall Assessment.}{13}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {VI}Limitations and Future Directions}{13}{}\protected@file@percent }
+\newlabel{sec:limitations}{{VI}{13}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {VI-A}}Sensitivity to Moment Order $K$}{13}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {VI-B}}Curse of Dimensionality for Multivariate Systems}{13}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {VI-C}}Regime Fragmentation with Insufficient Data}{13}{}\protected@file@percent }
+\bibcite{grad1949kinetic}{1}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {VI-D}}Hard vs. Soft Regime Assignment}{14}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {VI-E}}Spectral Radius Constraints and Long-Term Stability}{14}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {VI-F}}Moment Realizability Violations}{14}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {VI-G}}Limited Interpretability of Learned Regimes}{14}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {VII}Conclusion}{14}{}\protected@file@percent }
+\newlabel{sec:conclusion}{{VII}{14}{}{}{}}
+\bibcite{levermore1996moment}{2}
+\bibcite{schnoerr2015comparison}{3}
+\bibcite{duraisamy2019turbulence}{4}
+\bibcite{karniadakis2021physics}{5}
+\bibcite{brunton2016discovering}{6}
+\bibcite{donaghy2023symbolic}{7}
+\bibcite{yang2024identification}{8}
+\bibcite{huang2022mlRTE1}{9}
+\bibcite{huang2023mlRTE2}{10}
+\bibcite{li2020fourier}{11}
+\bibcite{ling2016reynolds}{12}
+\@writefile{toc}{\contentsline {section}{References}{15}{}\protected@file@percent }
+\gdef \@abspage@last{15}
