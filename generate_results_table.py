@@ -66,15 +66,24 @@ def generate_regime_ablation_table(results_path='ablation_results.csv'):
             else:
                 nrmse_str = f"{nrmse:.4f}"
 
+            # Add asterisk for unstable configurations (ρ_max > 1)
+            if rho > 1.0:
+                nrmse_str += r"$^*$"
+                rho_str = f"{rho:.3f}$^*$"
+            else:
+                rho_str = f"{rho:.3f}"
+
             latex_lines.append(
                 f"{ds_str} & {n_reg} & {h} & {mse_str} & {rmse_str} & {nrmse_str} & "
-                f"{rho:.3f} & {n_stable}/{n_total} \\\\"
+                f"{rho_str} & {n_stable}/{n_total} \\\\"
             )
 
         latex_lines.append(r"\midrule")
 
     latex_lines[-1] = r"\bottomrule"  # Replace last midrule with bottomrule
     latex_lines.append(r"\end{tabular}")
+    latex_lines.append(r"\vspace{0.1cm}")
+    latex_lines.append(r"\footnotesize{$^*$ Indicates unstable configuration ($\rho_{\max} > 1$), which may cause divergence at longer horizons.}")
     latex_lines.append(r"\end{table}")
 
     return "\n".join(latex_lines)
@@ -101,7 +110,12 @@ def generate_compact_comparison_table(results_path='ablation_results.csv'):
     for dataset in df['Dataset'].unique():
         df_ds = df[df['Dataset'] == dataset]
 
-        row_parts = [dataset]
+        # Add dagger for ABIDE due to small sample size
+        dataset_display = dataset
+        if dataset == "ABIDE":
+            dataset_display = r"ABIDE$^\dagger$"
+
+        row_parts = [dataset_display]
 
         for h in [1, 5, 10]:
             df_h = df_ds[df_ds['horizon'] == h]
@@ -119,6 +133,8 @@ def generate_compact_comparison_table(results_path='ablation_results.csv'):
 
     latex_lines.append(r"\bottomrule")
     latex_lines.append(r"\end{tabular}")
+    latex_lines.append(r"\vspace{0.1cm}")
+    latex_lines.append(r"\footnotesize{$^\dagger$ ABIDE has only 176 timepoints (123 training), limiting reliability for $R>2$.}")
     latex_lines.append(r"\end{table}")
 
     return "\n".join(latex_lines)
