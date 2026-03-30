@@ -1,6 +1,6 @@
 # Learning Dynamic Operators for Moment Evolution in Stochastic Systems
 
-([Project Writeup (PDF)](./Moment%20Forecasting%20Writeup.pdf))
+[Project Writeup (PDF)](./Moment%20Forecasting%20Writeup.pdf)
 
 This project studies moment forecasting in stochastic systems by learning regime-switching linear operators for the evolution of low-order moments, rather than learning an instantaneous closure map.
 
